@@ -7,7 +7,7 @@ Rules
    It never receives a price from the holdout period, so it can't learn from it by accident.
 2. Choices are made on walk-forward validation inside the development data, never on
    holdout results.
-3. Only final_test.py reads the holdout. Every run is appended to holdout_log.csv with the
+3. Only final_test.py reads the holdout (through load_all_for_final_test). Every run is appended to holdout_log.csv with the
    git commit, so the number of looks at the holdout is on record.
 
 Known peek: while checking the download on 2026-11-12, the last two closes (2026-11-10
@@ -41,13 +41,12 @@ def load_development():
     return build_features(prices).dropna(subset=FEATURES + ["target"]).reset_index(drop=True)
 
 
-def load_holdout_for_final_test(note):
-    """Feature rows whose target date is in the holdout. Logs the access. Call only from
-    final_test.py. Earlier prices are used only as lookback for the first holdout rows."""
-    feats = build_features(_prices()).dropna(subset=FEATURES + ["target"])
-    rows = feats[feats["target_date"] >= HOLDOUT_START].reset_index(drop=True)
-    _log_access(note, rows)
-    return rows
+def load_all_for_final_test(note):
+    """Every feature row, development and holdout together, so final_test.py can refit each
+    period on everything before it. Logs the access. Call only from final_test.py."""
+    feats = build_features(_prices()).dropna(subset=FEATURES + ["target"]).reset_index(drop=True)
+    _log_access(note, feats[feats["target_date"] >= HOLDOUT_START])
+    return feats
 
 
 def holdout_looks():
