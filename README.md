@@ -1,218 +1,75 @@
-# Bitcoin Price Prediction Project
+# Bitcoin Price Prediction
 
-A machine learning project that predicts Bitcoin closing prices using historical OHLC (Open, High, Low, Close) data.
+Predicts Bitcoin's next-day return from daily price history. The evaluation works the way a trading model has to: train on the past, test once on a later period the model never saw, and compare against simple baselines.
 
-## 📁 Project Files
+## Results (test period 2023-01-01 to 2025-09-25, 901 days)
 
-- **`sideproject.py`** - Main training script that processes data and trains ML models
-- **`predict_bitcoin.py`** - Simple prediction script to use trained models
-- **`Bitcoin_Price_Prediction_using_Machine_Learning.ipynb`** - Jupyter notebook with detailed analysis and visualizations
-- **`BTC.csv`** - Bitcoin historical price data
+| Model | Directional accuracy | Days predicted "up" | MAE | RMSE | MAPE |
+|---|---|---|---|---|---|
+| Lasso | 52.05% | 99.6% | $946 | $1,432 | 1.64% |
+| Random Forest | 51.94% | 99.7% | $947 | $1,434 | 1.64% |
+| XGBoost (best by cross-validation) | 52.05% | 100.0% | $949 | $1,433 | 1.65% |
+| Random walk (tomorrow = today)* | 47.95% | 0.0% | $947 | $1,436 | 1.64% |
+| Always "up" | 52.05% | 100% | | | |
 
-## 🚀 Quick Start
+MAE, RMSE and MAPE are for the predicted next-day closing price in US dollars. *A no-change forecast never predicts "up", so its directional accuracy is the share of days that were not up.
 
-### 1. Train the Models
+**What this shows**
 
-Run the main script to train all models:
+- **No model beats the baselines.** The models learned Bitcoin's upward drift in the training years and predict "up" on almost every test day, so their directional accuracy matches the share of up days (52.05%). A one-sided binomial test of the best model against that rate gives p = 0.51.
+- **Price errors match the random walk.** The models' MAPE (1.65% for XGBoost) is the same as simply assuming tomorrow's close equals today's (1.64%).
+- **R² on price levels is misleading here.** Every model, including the random walk, scores 0.998, because tomorrow's price is almost always close to today's. R² on returns is close to zero (0.0019 for XGBoost).
+- Daily open, high, low and close prices alone do not carry a usable next-day signal in this data.
 
-```powershell
-python sideproject.py
+## What changed (November 2026)
+
+The first version reported R² near 0.9998, but its evaluation leaked future information:
+
+1. It predicted the same day's close from that day's high and low, which are only known once the day is over.
+2. The 20-day moving average feature included the close being predicted.
+3. The train/test split was random, so the model trained on days after the ones it was tested on.
+4. Outlier capping and the square-root transform were fitted on the whole dataset, test days included. The capping also clipped every price above the 95th percentile to a single value.
+
+The fixes:
+
+- Predict the **next** day's return using only information available at today's close.
+- Split by date and test once on the most recent period.
+- Tune hyperparameters with walk-forward cross-validation inside the training years.
+- Fit scaling inside the model pipeline, so it only ever sees training data.
+- Report results next to a random-walk baseline and an always-up baseline.
+
+The original notebook is kept for reference and carries a note explaining the leak.
+
+## Method
+
+- **Target.** Next-day log return, log(close[t+1] / close[t]). The predicted price is today's close multiplied by exp(predicted return).
+- **Features** (all known at day t's close). Log returns over 1, 2, 3, 5, 10 and 20 days, 10- and 20-day volatility, distance from the 20- and 50-day moving averages, the day's high-low range, and the open-to-close return.
+- **Data gap.** The data is missing 49 days, from 2024-12-09 to 2025-01-27. Features are computed separately inside each run of consecutive days, so no return or rolling window spans the gap.
+- **Split.** Train 2010-09-04 to 2022-12-31 (4,502 days). Test 2023-01-01 to 2025-09-25 (901 days), used once.
+- **Tuning.** Grid search with 5 walk-forward folds (`TimeSeriesSplit`), scored on mean absolute error. The final model is chosen by cross-validation score, not by test results.
+- **Models.** Lasso on degree-2 polynomial features, Random Forest, and XGBoost.
+
+## Files
+
+- `features.py`: feature and target construction, shared by training and prediction
+- `sideproject.py`: trains, tunes and evaluates the models, then saves `btc_model.pkl` and `results.json`
+- `predict_bitcoin.py`: predicts the next day's close from recent daily prices
+- `results.json`: the numbers in the table above
+- `Bitcoin_Price_Prediction_using_Machine_Learning.ipynb`: the original exploratory notebook (leaky evaluation, kept for reference)
+- `BTC.csv`: daily BTC open, high, low and close prices from 2010-07-17 to 2025-09-26
+
+## Run it
+
 ```
-
-This will:
-- Load and clean the Bitcoin dataset
-- Apply feature engineering (outlier removal, skewness correction)
-- Train three models: Lasso Regression, Random Forest, and XGBoost
-- Evaluate all models and save the best one
-- Generate these files:
-  - `btc_model.pkl` (XGBoost model)
-  - `btc_rf_model.pkl` (Random Forest model)
-  - `btc_lasso_model.pkl` (Lasso model)
-  - `btc_scaler.pkl` (Feature scaler)
-  - `btc_imputer.pkl` (Missing value imputer)
-
-### 2. Make Predictions
-
-Use the trained model to predict prices:
-
-```powershell
+pip install -r requirements.txt
+python sideproject.py
 python predict_bitcoin.py
 ```
 
-Or in your own Python code:
+## Next steps
 
-```python
-from predict_bitcoin import predict_bitcoin_price
+- Add information beyond price, such as trading volume or other assets.
+- Retrain on a rolling window through the test period instead of training once.
+- Turn predictions into a backtest that includes transaction costs.
 
-# Predict closing price
-predicted_close = predict_bitcoin_price(
-    open_price=67500.0,
-    high_price=68200.0,
-    low_price=67000.0,
-    price_trend=67800.0  # Optional: 20-day moving average
-)
-
-print(f"Predicted Close: ${predicted_close:,.2f}")
-```
-
-### 3. Explore the Notebook
-
-Open the Jupyter notebook for detailed analysis:
-
-```powershell
-jupyter notebook Bitcoin_Price_Prediction_using_Machine_Learning.ipynb
-```
-
-The notebook includes:
-- Data exploration and visualization
-- Feature engineering steps
-- Model training with hyperparameter tuning
-- Comprehensive accuracy evaluation
-- Visualization of predictions vs actual values
-
-## 📊 Model Performance
-
-The project trains three models and evaluates them using:
-
-- **R² Score** - Measures how well the model explains variance (higher is better)
-- **MAE** (Mean Absolute Error) - Average prediction error in dollars
-- **RMSE** (Root Mean Squared Error) - Penalizes larger errors more
-- **MAPE** (Mean Absolute Percentage Error) - Average error as a percentage
-
-### Expected Performance:
-- **Excellent**: R² > 0.9, MAPE < 5%
-- **Good**: R² 0.7-0.9, MAPE 5-10%
-- **Moderate**: R² 0.5-0.7, MAPE 10-20%
-
-## 🔧 Requirements
-
-Install required packages:
-
-```powershell
-pip install pandas numpy scikit-learn xgboost joblib matplotlib seaborn
-```
-
-Or install from requirements file:
-
-```powershell
-pip install -r requirements.txt
-```
-
-## 📝 Model Features
-
-The model uses these features to predict closing price:
-
-1. **Open Price** - Opening price of the day
-2. **High Price** - Highest price of the day
-3. **Low Price** - Lowest price of the day
-4. **Price Trend** - 20-day moving average
-
-## 🎯 Accuracy Evaluation
-
-To check if predictions are accurate, the script provides:
-
-1. **Numeric Metrics** - R², MAE, RMSE, MAPE scores
-2. **Visual Comparison** - Line plots of actual vs predicted prices
-3. **Scatter Plots** - Shows how close predictions are to actual values
-4. **Residual Analysis** - Distribution of prediction errors
-5. **Sample Comparisons** - Individual prediction examples
-
-## 💡 Usage Examples
-
-### Example 1: Quick Prediction
-```python
-import pickle
-import joblib
-import pandas as pd
-
-# Load model
-model = pickle.load(open('btc_model.pkl', 'rb'))
-scaler = joblib.load('btc_scaler.pkl')
-imputer = joblib.load('btc_imputer.pkl')
-
-# Prepare data
-data = pd.DataFrame([{
-    'open': 50000.0,
-    'high': 51000.0,
-    'low': 49500.0,
-    'price_trend': 50200.0
-}])
-
-# Predict
-data_scaled = imputer.transform(scaler.transform(data))
-prediction = model.predict(data_scaled)[0]
-print(f"Predicted: ${prediction:,.2f}")
-```
-
-### Example 2: Batch Predictions
-```python
-from predict_bitcoin import predict_bitcoin_price
-
-# Multiple predictions
-data_points = [
-    (67500, 68200, 67000, 67800),
-    (45000, 46500, 44800, 45600),
-    (70000, 72000, 69500, 71000),
-]
-
-for open_p, high_p, low_p, trend_p in data_points:
-    pred = predict_bitcoin_price(open_p, high_p, low_p, trend_p)
-    print(f"Open: ${open_p:,} → Predicted Close: ${pred:,.2f}")
-```
-
-## 🔍 How It Works
-
-1. **Data Preprocessing**
-   - Remove outliers using percentile capping (5th-95th percentile)
-   - Apply square root transformation to reduce skewness
-   - Create rolling average features for trend analysis
-
-2. **Feature Scaling**
-   - StandardScaler normalizes all features to mean=0, std=1
-   - SimpleImputer handles any missing values with mean strategy
-
-3. **Model Training**
-   - **Lasso Regression**: Linear model with L1 regularization
-   - **Random Forest**: Ensemble of decision trees
-   - **XGBoost**: Gradient boosted trees (usually best performance)
-
-4. **Prediction**
-   - New data goes through same preprocessing pipeline
-   - Scaled features fed to trained model
-   - Output is the predicted closing price
-
-## 📈 Improvement Ideas
-
-- Add more features (volume, technical indicators, sentiment data)
-- Try LSTM/GRU neural networks for time series
-- Implement walk-forward validation
-- Add real-time data fetching from APIs
-- Create a web dashboard for predictions
-
-## ⚠️ Important Notes
-
-- **Not Financial Advice**: This is for educational purposes only
-- **Past Performance**: Historical accuracy doesn't guarantee future results
-- **Data Quality**: Predictions are only as good as the training data
-- **Preprocessing**: Always apply the same preprocessing to new data
-
-## 📧 Support
-
-If you encounter issues:
-1. Ensure all dependencies are installed
-2. Check that `BTC.csv` is in the same directory
-3. Verify Python version is 3.7+
-4. Review error messages for missing files
-
-## 🏆 Project Status
-
-✅ Data preprocessing and cleaning  
-✅ Multiple model training (Lasso, RF, XGBoost)  
-✅ Model evaluation and comparison  
-✅ Prediction function for production use  
-✅ Comprehensive Jupyter notebook  
-✅ Interactive prediction script  
-
----
-
-**Built with**: Python, Scikit-learn, XGBoost, Pandas, NumPy
+This project is for learning only and is not financial advice.
