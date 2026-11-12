@@ -120,7 +120,23 @@ Validation is walk-forward. From 2020-01-01 the models are refit every quarter o
 - **The edge is small.** Log-loss skill is about 0.4%, so the predicted probabilities are only slightly better than predicting the base rate every day. Picking the best of 14 configurations also flatters the winner, and the confidence intervals don't adjust for that.
 - **Volatility: no model beats the simple baseline on the pre-chosen metric (MAE).** The trailing 20-day average already captures that big moves cluster together (rank correlation 0.25). The fitted models explain a little more variance (R² up to 0.054 against 0.034), but they were trained on squared error while MAE was the scoring metric chosen in advance. That metric isn't being changed after seeing the results.
 
-Next, the top direction configuration gets scored once on the fresh holdout with `final_test.py`, refitting each quarter as in validation.
+The top direction configuration was then scored once on the fresh holdout (below).
+
+## Holdout result (scored once, 2026-11-12)
+
+The pre-registered winner, price + ETH features with XGBoost, was scored once on the fresh holdout. It was refit each quarter on all earlier data, as in validation. The run is logged in `holdout_log.csv` against commit `7777ffe`, which had no uncommitted changes.
+
+| Holdout (2025-09-27 to 2026-11-11, 411 days) | Result |
+|---|---|
+| AUC | 0.488 (95% CI 0.434 to 0.546) |
+| Directional accuracy | 48.9% |
+| Always-up rate | 48.7% |
+| Days predicted "up" | 60% |
+| Log-loss skill vs. the base rate | -1.2% |
+
+**The validation edge did not survive.** On new data the model ranks up days no better than chance (AUC 0.488), its accuracy matches always-up, and its probabilities are slightly worse than predicting the base rate every day. Validation had already hinted at this: 2025, the most recent validation year, was the weakest at AUC 0.507. The holdout also had more down days than up days, while the model still predicted "up" 60% of the time.
+
+**Conclusion.** Across a leakage-free rebuild, five extra data sources and a sealed holdout, there's no reliable next-day directional edge in these features. The small validation edge is what picking the best of 14 configurations on one period can produce. The holdout has now been used, so testing any further idea needs a new untouched period, starting with data after 2026-11-11.
 
 ## Run it
 
