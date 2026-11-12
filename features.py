@@ -38,6 +38,7 @@ def _segment_features(seg):
     seg["co_ret"] = np.log(seg["close"] / seg["open"])
     # Target: tomorrow's log return. NaN on the last day of each segment.
     seg["target"] = logc.shift(-1) - logc
+    seg["target_date"] = seg["date"].shift(-1)  # the day whose return is being predicted
     return seg
 
 

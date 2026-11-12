@@ -1,0 +1,17 @@
+{
+  "features": "price+eth",
+  "model": "xgboost",
+  "first_target": "2025-09-27",
+  "last_target": "2026-11-11",
+  "days": 411,
+  "auc": 0.4877725118483413,
+  "auc_ci_95": [
+    0.43448762448123057,
+    0.5459783383794082
+  ],
+  "accuracy": 0.48905109489051096,
+  "always_up_rate": 0.48661800486618007,
+  "share_predicted_up": 0.5985401459854015,
+  "logloss_skill": -0.011757735066388664,
+  "look_number": 1
+}

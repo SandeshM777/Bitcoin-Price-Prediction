@@ -1,0 +1,8 @@
+{
+  "source": "https://api.exchange.coinbase.com/products/BTC-USD/candles",
+  "fetched_at_utc": "2026-11-12T13:36:40+00:00",
+  "first_day": "2015-07-20",
+  "last_complete_day": "2026-11-11",
+  "rows": 4133,
+  "missing_days": 0
+}

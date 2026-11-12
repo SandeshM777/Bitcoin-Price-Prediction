@@ -1,0 +1,2 @@
+accessed_at_utc,git_commit,uncommitted_changes,first_target,last_target,rows,note
+2026-11-12T14:28:49+00:00,7777ffe,False,2025-09-27,2026-11-11,411,price+eth xgboost: Pre-registered winner of experiments.py (highest validation AUC 0.544); single planned look
