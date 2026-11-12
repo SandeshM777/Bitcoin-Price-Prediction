@@ -57,6 +57,18 @@ The original notebook is kept for reference and carries a note explaining the le
 - `results.json`: the numbers in the table above
 - `Bitcoin_Price_Prediction_using_Machine_Learning.ipynb`: the original exploratory notebook (leaky evaluation, kept for reference)
 - `BTC.csv`: daily BTC open, high, low and close prices from 2010-07-17 to 2025-09-26
+- `fetch_data.py`: downloads daily BTC-USD candles with volume from Coinbase into `data/`
+- `holdout.py`: the development/holdout split and the rules that protect it
+- `final_test.py`: scores a frozen model once on the holdout and logs the run
+
+## Fresh holdout (set up November 2026)
+
+The 2023 to 2025 test period above has now been seen, so it can't give an unbiased score for any further changes. To have one, every day from **2025-09-27** on is held out. None of the earlier work saw those days, because `BTC.csv` ends on 2025-09-26.
+
+- **Data.** `data/btc_usd_daily_coinbase.csv` holds daily Coinbase candles from 2015-07-20 to 2026-11-11 (4,133 days, none missing), including volume. Volume is BTC traded on Coinbase only. On the days both files cover, Coinbase closes differ from `BTC.csv` by a median of 0.37%, and daily returns correlate at 0.94, most likely because the two sources close their days at different hours. New work uses Coinbase only.
+- **Development.** 3,672 days, with predictions from 2015-09-08 to 2025-09-26. `holdout.load_development()` cuts the data off before the holdout, so development code never receives a holdout price. Every feature idea, model choice and tuning step is judged by walk-forward validation inside this period.
+- **Holdout.** 411 days, predicting 2025-09-27 to 2026-11-11. Only `final_test.py` reads it. It refuses to run without `--confirm`, and appends each run, with its git commit, to `holdout_log.csv`. The plan is to score the final model once and report that result, whatever it is.
+- **Known peek.** While checking the download, the last two closes (2026-11-10 and 2026-11-11) were printed. They show the price is lower than in September 2025. No holdout returns or model results have been looked at.
 
 ## Run it
 
