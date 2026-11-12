@@ -1,0 +1,80 @@
+{
+  "train_period": [
+    "2010-09-04",
+    "2022-12-31",
+    4502
+  ],
+  "test_period": [
+    "2023-01-01",
+    "2025-09-25",
+    901
+  ],
+  "features": [
+    "ret_1",
+    "ret_2",
+    "ret_3",
+    "ret_5",
+    "ret_10",
+    "ret_20",
+    "vol_10",
+    "vol_20",
+    "ma_gap_20",
+    "ma_gap_50",
+    "hl_range",
+    "co_ret"
+  ],
+  "cv_mae_log_return": {
+    "Lasso": 0.02852393915416438,
+    "Random Forest": 0.02835031513480298,
+    "XGBoost": 0.02829881956922097
+  },
+  "best_model_by_cv": "XGBoost",
+  "always_up_rate": 0.5205327413984462,
+  "best_direction_p_value_vs_always_up": 0.5134800871452627,
+  "results": [
+    {
+      "model": "Lasso",
+      "directional_accuracy": 0.5205327413984462,
+      "direction_hits": 469,
+      "share_predicted_up": 0.9955604883462819,
+      "mae_usd": 945.9414957303234,
+      "rmse_usd": 1432.3316957089128,
+      "mape_pct": 1.6388332608253988,
+      "r2_returns": 0.0013706209271270309,
+      "r2_price_level": 0.9977943924251778
+    },
+    {
+      "model": "Random Forest",
+      "directional_accuracy": 0.5194228634850167,
+      "direction_hits": 468,
+      "share_predicted_up": 0.9966703662597114,
+      "mae_usd": 946.8855837714331,
+      "rmse_usd": 1433.50209574133,
+      "mape_pct": 1.641293208316229,
+      "r2_returns": -0.0011544147222355416,
+      "r2_price_level": 0.9977907864198494
+    },
+    {
+      "model": "XGBoost",
+      "directional_accuracy": 0.5205327413984462,
+      "direction_hits": 469,
+      "share_predicted_up": 1.0,
+      "mae_usd": 948.7681247214756,
+      "rmse_usd": 1432.6763652586292,
+      "mape_pct": 1.6453066650805759,
+      "r2_returns": 0.0018611199090551311,
+      "r2_price_level": 0.9977933308034346
+    },
+    {
+      "model": "Random walk (no change)",
+      "directional_accuracy": 0.4794672586015538,
+      "direction_hits": 432,
+      "share_predicted_up": 0.0,
+      "mae_usd": 946.8892341842384,
+      "rmse_usd": 1436.4663366453137,
+      "mape_pct": 1.6395062743211026,
+      "r2_returns": -0.00910935252209133,
+      "r2_price_level": 0.9977816404101951
+    }
+  ]
+}
